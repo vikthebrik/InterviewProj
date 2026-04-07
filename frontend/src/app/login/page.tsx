@@ -106,9 +106,20 @@ export default async function LoginPage({
         </div>
       </div>
       
+      {/* Back to report form */}
+      <div className="mt-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-uo-green transition-colors"
+        >
+          <span>←</span>
+          <span>Submit a report without signing in</span>
+        </Link>
+      </div>
+
       {/* Footer Text resembling Duck ID portal */}
-      <div className="mt-8 text-center text-xs text-gray-500 max-w-sm">
-        <p>For security reasons, please log out and exit your web browser when you are done accessing services that require authentication!</p>
+      <div className="mt-4 text-center text-xs text-gray-400 max-w-sm">
+        <p>For security reasons, please log out and exit your web browser when you are done accessing services that require authentication.</p>
       </div>
     </div>
   );

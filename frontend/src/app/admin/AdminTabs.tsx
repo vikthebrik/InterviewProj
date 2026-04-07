@@ -2,30 +2,37 @@
 
 import { useState } from 'react';
 
-export default function AdminTabs({
-  tableContent,
-  calendarContent,
-  tableLabel = 'All Reports',
-}: {
-  tableContent: React.ReactNode;
-  calendarContent: React.ReactNode;
-  tableLabel?: string;
-}) {
-  const [tab, setTab] = useState<'table' | 'calendar'>('table');
+type Tab = 'reports' | 'list' | 'analytics';
 
-  const tabs = [
-    { key: 'table' as const, label: tableLabel },
-    { key: 'calendar' as const, label: 'Calendar' },
+export default function AdminTabs({
+  reportsContent,
+  listContent,
+  analyticsContent,
+  defaultTab = 'reports',
+  reportsLabel = 'Reports',
+}: {
+  reportsContent: React.ReactNode;
+  listContent?: React.ReactNode | null;
+  analyticsContent: React.ReactNode | null;
+  defaultTab?: Tab;
+  reportsLabel?: string;
+}) {
+  const [tab, setTab] = useState<Tab>(defaultTab);
+
+  const tabs: { key: Tab; label: string; hidden?: boolean }[] = [
+    { key: 'reports',   label: reportsLabel },
+    { key: 'list',      label: 'List',      hidden: !listContent },
+    { key: 'analytics', label: 'Analytics', hidden: analyticsContent === null },
   ];
 
   return (
     <div>
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
-        {tabs.map((t) => (
+      <div className="flex border-b border-gray-200 mb-4">
+        {tabs.filter((t) => !t.hidden).map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${
               tab === t.key
                 ? 'border-b-2 border-uo-green text-uo-green'
                 : 'text-gray-500 hover:text-uo-ink'
@@ -35,7 +42,9 @@ export default function AdminTabs({
           </button>
         ))}
       </div>
-      {tab === 'table' ? tableContent : calendarContent}
+      {tab === 'reports'   && reportsContent}
+      {tab === 'list'      && listContent}
+      {tab === 'analytics' && analyticsContent}
     </div>
   );
 }

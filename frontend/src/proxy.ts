@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const protectedRoutes = ['/reporter', '/admin', '/executive'];
+const protectedRoutes = ['/reporter', '/admin'];
 const publicRoutes = ['/login', '/'];
 
 export default async function proxy(req: NextRequest) {
@@ -16,15 +16,11 @@ export default async function proxy(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
+        getAll() { return req.cookies.getAll(); },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
           response = NextResponse.next({ request: req });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     }
@@ -36,24 +32,22 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.nextUrl));
   }
 
-  // Role-based protection
-  if (user && isProtectedRoute) {
+  // Role-based protection for /admin — admin, root_admin, and executive all allowed
+  if (user && path.startsWith('/admin')) {
     const role = user.user_metadata?.role as string | undefined;
-    const isAdmin = role === 'admin' || role === 'root_admin';
-    if (path.startsWith('/admin') && !isAdmin) {
-      return NextResponse.redirect(new URL('/login', req.nextUrl));
-    }
-    if (path.startsWith('/executive') && role !== 'executive') {
+    const canAccessAdmin = role === 'admin' || role === 'root_admin' || role === 'executive';
+    if (!canAccessAdmin) {
       return NextResponse.redirect(new URL('/login', req.nextUrl));
     }
   }
 
-  // Logged-in users going to /login get redirected to their dashboard
+  // Reporters trying to access /reporter — just needs to be logged in (handled above)
+
+  // Logged-in users going to /login → redirect to their dashboard
   if (path === '/login' && user) {
     const role = user.user_metadata?.role as string | undefined;
-    const dest =
-      role === 'admin' || role === 'root_admin' ? '/admin'
-      : role === 'executive' ? '/executive'
+    const dest = (role === 'admin' || role === 'root_admin' || role === 'executive')
+      ? '/admin'
       : '/reporter';
     return NextResponse.redirect(new URL(dest, req.nextUrl));
   }

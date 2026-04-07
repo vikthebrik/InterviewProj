@@ -138,6 +138,60 @@ app.patch('/api/reports/:id/status', async (req, res) => {
   res.json({ success: true });
 });
 
+// POST /api/reports/:id/note — add a note to the audit log without changing status
+app.post('/api/reports/:id/note', async (req, res) => {
+  const { id } = req.params;
+  const { note, changed_by } = req.body as { note: string; changed_by: string };
+
+  if (!note?.trim()) {
+    res.status(400).json({ error: 'note is required' });
+    return;
+  }
+
+  const { data: report } = await supabase
+    .from('reports')
+    .select('status')
+    .eq('id', id)
+    .single();
+
+  const currentStatus = report?.status ?? 'pending';
+
+  const { error } = await supabase.from('audit_logs').insert({
+    report_id: id,
+    changed_by: changed_by || null,
+    old_status: currentStatus,
+    new_status: currentStatus,
+    note: note.trim(),
+  });
+
+  if (error) {
+    console.error('Note insert error:', error);
+    res.status(500).json({ error: 'Failed to save note' });
+    return;
+  }
+
+  res.json({ success: true });
+});
+
+// PATCH /api/reports/:id/assign — assign or unassign an officer
+app.patch('/api/reports/:id/assign', async (req, res) => {
+  const { id } = req.params;
+  const { assigned_to } = req.body as { assigned_to: string | null };
+
+  const { error } = await supabase
+    .from('reports')
+    .update({ assigned_to: assigned_to ?? null })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Assign officer error:', error);
+    res.status(500).json({ error: 'Failed to assign officer' });
+    return;
+  }
+
+  res.json({ success: true });
+});
+
 // GET /api/reports/realtime — SSE proxy for Supabase Realtime
 app.get('/api/reports/realtime', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
